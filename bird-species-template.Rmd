@@ -34,11 +34,11 @@ When you're finished with this activity, you will have a graph that shows what t
 Before we begin, the book gives us some instructions to select a few key variables and clean up the date formatting.  Use the commands given in the book, but be sure to study the functions used so you know what is happening.  In this case, we select `SpeciesName`, `Month`, and `Day`. Then a `mutate()` command converts each variable to character, and then converts the resulting "character string" to a number.
 
 ```{r}
-# Get the data table & clean up dates (see Data Computing eBook)
-
-
-
-# Inspect resulting data
+OrdwayBirds <-
+  OrdwayBirds %>%
+  select( SpeciesName, Month, Day ) %>%
+  mutate( Month = as.numeric(as.character(Month)), 
+          Day = as.numeric(as.character(Day)))
 
 
 ```
@@ -51,12 +51,15 @@ Before we begin, the book gives us some instructions to select a few key variabl
 
 
 ```{r}
-# unique species in original data (including mis-spellings)
+OrdwayBirds %>%
+  summarise(count = n_distinct(SpeciesName))
+  # count 275
 
-
-
-# unique species in the clean list
-
+OrdwaySpecNameCount <-
+  OrdwaySpeciesNames %>%
+  summarise(count = n_distinct(SpeciesNameCleaned))
+OrdwaySpecNameCount 
+# count 109
 
 
 ```
@@ -68,15 +71,11 @@ Before we begin, the book gives us some instructions to select a few key variabl
 
 
 ```{r}
-# inspect OrdwaySpeciesNames
-
-
-# inner join
-
-
-
-
-# inspect the data after the join
+Corrected <-
+  OrdwayBirds %>%
+  inner_join(OrdwaySpeciesNames, by = "SpeciesName") %>% 
+  select(Species = SpeciesNameCleaned, Month, Day) %>%
+  na.omit()  
 
 
 ```
@@ -87,18 +86,21 @@ Before we begin, the book gives us some instructions to select a few key variabl
 We want to identify the top 5-6 bird species sighted at the Katherine Ordway Natural History Study Area.
 
 ```{r}
-# count sightings by species in descending order
+CountCorrect <- 
+  Corrected %>% 
+  group_by(Species) %>% 
+  summarise(count=n()) %>%
+  arrange(desc(count))
 
+topSix <-
+  CountCorrect %>% 
+  head(n = 6) %>% 
+  .$Species
+topSix
 
-
-
-# a hint in the text book recommends displaying the top 10 species to choose our threshold
-
-
-
-# define a sightings threshold; produce a table with only birds belonging to major species
-
-
+Majors <-
+  Corrected %>% 
+  filter(Species %in% topSix)
 
 
 ```
@@ -109,8 +111,10 @@ We want to identify the top 5-6 bird species sighted at the Katherine Ordway Nat
 We now want to produce a month-by-month count for each of the major species, and then construct a chart to tell the story of what time of year the various species appear.
 
 ```{r}
-# prepare glyph-ready data table called `ByMonth`
-
+ByMonth <- Majors %>%
+  group_by(Species, Month) %>%
+  summarise(count = n()) %>%
+  arrange(Month)
 
 
 ```
@@ -120,14 +124,16 @@ Now use the ggplot template below to generate the desired graph. (Remark you can
 
 
 ```{r}
+CrazyMonth <- monthAbbr <- with(Majors, plyr::mapvalues(Month, from = 1:12, to = month.abb))
+CrazyMonth <- factor(CrazyMonth, levels = month.abb)
+Majors$Month <- CrazyMonth
+
 # ggplot commands
-
-ByMonth %>% 
-  ggplot(aes(x = Month, y = count, color = Species)) + 
-  geom_line()
-
-ByMonth %>% ggplot(aes(x=Month,y=count ,fill=Species)) +
-  geom_bar(stat='identity',position='stack', width=.9) 
+Majors %>% 
+  ggplot(aes(x = Month)) +
+  geom_bar() +
+  facet_wrap(~ Species) +
+  theme(axis.text.x=element_text(angle=45,hjust=1))
 
 ```
 
@@ -135,23 +141,27 @@ According to the graph, we can answer the questions posed:
 
 ##### 1. Which species are present year-round?  
 
-
+the American Crow and Black-capped Chickadee are present year-round
 
 ##### 2. Which species are migratory, that is, primarily present in one or two seasons?
 
-
-
+The Lincolns Sparrow and Slate-colored Junco are primarily present in one or two seasons
 
 ##### 3. What is the peak month for each major species? (bullet list)
 
-
+- American Goldfinch: October
+- Black-capped Chickadee: November
+- Field Sparrow: May
+- Lincolns Sparrow: October
+- Slate-colored Junco: October
+- Tree swallow: March
 
 
 ##### 4. Which major species are seen in good numbers for at least 6 months of the year?
 
-
+The species that are seen in good numbers for at least 6 months of the year are the Black-capped Chickadee, Red-winged Blackbird, American Crow, and Dark-eyed Junco
 
 ```{r}
-
+n_distinct()
 ```
 
