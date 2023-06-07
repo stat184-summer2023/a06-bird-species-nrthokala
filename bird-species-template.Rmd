@@ -1,6 +1,6 @@
 ---
 title: "Activity: Bird Species"
-author: "Your Names Here"
+author: "Neeraj Thokala"
 date: "DUE DATE "
 output: html_notebook
 ---
